@@ -1,15 +1,6 @@
 #!/usr/bin/env julia
 
 using Random
-using Printf
-
-# Tabela de Melhores Valores Conhecidos (BKV) fornecidos pelo professor
-const BKV = Dict(
-    "oma01.dat" => 472.0, "oma02.dat" => 474.0, "oma03.dat" => 470.0,
-    "oma04.dat" => 470.0, "oma05.dat" => 474.0, "oma06.dat" => 719.0,
-    "oma07.dat" => 724.0, "oma08.dat" => 732.0, "oma09.dat" => 733.0,
-    "oma10.dat" => 721.0
-)
 
 # --- FUNÇÕES AUXILIARES ---
 
@@ -145,85 +136,59 @@ function run_vns(n, m, A, time_limit)
     return best_S, best_aff, (time() - start_time)
 end
 
-# --- PROCESSAMENTO EM LOTE (5 SEMENTES) ---
+# --- FUNÇÃO PRINCIPAL EXIGIDA PELO TRABALHO ---
 
-function processar_pasta(pasta)
-    arquivos = filter(x -> endswith(x, ".dat") && startswith(x, "oma"), readdir(pasta))
-    sort!(arquivos)
+function main()
+    # Verifica regras de linha de comando
+    if length(ARGS) < 1
+        println(stderr, "Uso incorreto. O primeiro parametro deve ser o arquivo de saida.")
+        exit(1)
+    end
     
-    TIME_LIMIT = 300.0 
-    NUM_SEEDS = 5
+    arquivo_saida = first(ARGS)
     
-    resultados = []
+    # Segundo parametro opcional: tempo limite em segundos (se não passar, usa 300)
+    time_limit = length(ARGS) >= 2 ? parse(Float64, ARGS[begin+1]) : 300.0
 
-    println("Iniciando bateria de testes do VNS (Julia)...")
-    println("Time limit por seed: ", TIME_LIMIT, " seg | Sementes: ", NUM_SEEDS)
-    
-    for arquivo in arquivos
-        caminho = joinpath(pasta, arquivo)
-        print(">> Processando ", arquivo, " ... ")
-        
-        texto = read(caminho, String)
-        tokens = split(texto)
-        valores = parse.(Float64, tokens)
-        
-        n = round(Int, valores[1])
-        m_size = round(Int, valores[2])
-        
-        A = zeros(Float64, n, n)
-        
-        # CORREÇÃO CHAVE: Lendo como Lista de Arestas (u, v, peso)
-        idx = 3
-        while idx + 2 <= length(valores)
-            u = round(Int, valores[idx])
-            v = round(Int, valores[idx+1])
-            peso = valores[idx+2]
-            
-            # Preenche espelhando para garantir matriz perfeitamente simétrica
-            if 1 <= u <= n && 1 <= v <= n
-                A[u, v] = peso
-                A[v, u] = peso
-            end
-            
-            idx += 3 # Avança de 3 em 3 (Próxima Aresta)
-        end
-
-        S_init, _ = greedy_initial_solution(n, m_size, A)
-        aff_inicial = get_total_affinity(S_init, A)
-
-        soma_aff = 0.0
-        soma_time = 0.0
-
-        for seed in 1:NUM_SEEDS
-            Random.seed!(seed * 1000) 
-            _, aff_final, exec_time = run_vns(n, m_size, A, TIME_LIMIT)
-            soma_aff += aff_final
-            soma_time += exec_time
-        end
-
-        media_aff = soma_aff / NUM_SEEDS
-        media_time = soma_time / NUM_SEEDS
-        
-        bkv = get(BKV, arquivo, NaN)
-        desvio_si = 100 * (aff_inicial - media_aff) / aff_inicial
-        desvio_opt = 100 * (bkv - media_aff) / bkv
-
-        push!(resultados, (arquivo, aff_inicial, media_aff, desvio_si, desvio_opt, media_time))
-        println("Concluído!")
+    # Lendo arquivo da entrada padrão (stdin)
+    texto = read(stdin, String)
+    tokens = split(texto)
+    if isempty(tokens)
+        return
     end
 
-    println("\n\n" * "="^100)
-    println(" TABELA DE RESULTADOS COMPUTACIONAIS - META-HEURÍSTICA VNS (JULIA) ")
-    println("="^100)
-    @printf("%-12s | %-12s | %-12s | %-12s | %-12s | %-12s\n", 
-            "Instância", "Val. Inicial", "Valor Final", "Desvio (SI)", "Desvio (Opt)", "Tempo VNS(s)")
-    println("-"^100)
+    n = round(Int, parse(Float64, first(tokens)))
+    m_size = round(Int, parse(Float64, tokens[begin+1]))
     
-    for r in resultados
-        @printf("%-12s | %-12.2f | %-12.2f | %-11.2f%% | %-11.2f%% | %-12.2f\n", r...)
+    A = zeros(Float64, n, n)
+    idx = 3
+    while idx + 2 <= length(tokens)
+        # Ajuste para base-1 do Julia, pois as instâncias do professor começam com a pessoa 0
+        u = round(Int, parse(Float64, tokens[idx])) + 1
+        v = round(Int, parse(Float64, tokens[idx+1])) + 1
+        peso = parse(Float64, tokens[idx+2])
+        
+        if 1 <= u <= n && 1 <= v <= n
+            A[u, v] = peso
+            A[v, u] = peso
+        end
+        idx += 3
     end
-    println("="^100)
+
+    # Executa a meta-heurística
+    best_S, best_aff, _ = run_vns(n, m_size, A, time_limit)
+
+    # Subtrai 1 para voltar os IDs ao formato base-0 original da especificação
+    solucao_final = sort([p - 1 for p in best_S])
+    str_solucao = join(solucao_final, " ")
+
+    # 1. Imprime a melhor solução encontrada na saída padrão (stdout)
+    println(str_solucao)
+
+    # 2. Grava a melhor solução encontrada no arquivo passado por parâmetro
+    open(arquivo_saida, "w") do f
+        println(f, str_solucao)
+    end
 end
 
-pasta_alvo = length(ARGS) > 0 ? first(ARGS) : "."
-processar_pasta(pasta_alvo)
+main()
