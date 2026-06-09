@@ -10,7 +10,7 @@ function resolver_todas_instancias(pasta)
     sort!(arquivos) # Garante que vai rodar em ordem (oma01, oma02, etc.)
 
     if isempty(arquivos)
-        println("Nenhuma instância .dat encontrada na pasta: $pasta")
+        println("Nenhuma instância .dat encontrada na pasta: ", pasta)
         return
     end
 
@@ -18,23 +18,29 @@ function resolver_todas_instancias(pasta)
 
     for arquivo in arquivos
         caminho_completo = joinpath(pasta, arquivo)
-        println("\n>>> Processando: $arquivo ...")
+        println("\n>>> Processando: ", arquivo, " ...")
         
-        # Leitura da Instância
+        # Leitura da Instância (Corrigida para Lista de Arestas)
         texto = read(caminho_completo, String)
         tokens = split(texto)
         valores = parse.(Float64, tokens)
         
-        n = round(Int, valores[1])
-        m_size = round(Int, valores[2])
+        n = round(Int, first(valores))
+        m_size = round(Int, valores[begin+1])
         
         A = zeros(Float64, n, n)
         idx = 3
-        for i in 1:n
-            for j in 1:n
-                A[i,j] = valores[idx]
-                idx += 1
+        while idx + 2 <= length(valores)
+            # O arquivo original usa base-0 para os vértices, Julia usa base-1
+            u = round(Int, valores[idx]) + 1
+            v = round(Int, valores[idx+1]) + 1
+            peso = valores[idx+2]
+            
+            if 1 <= u <= n && 1 <= v <= n
+                A[u, v] = peso
+                A[v, u] = peso
             end
+            idx += 3
         end
 
         # Criação do Modelo
@@ -63,17 +69,17 @@ function resolver_todas_instancias(pasta)
         if status == MOI.OPTIMAL
             z_opt = objective_value(modelo)
             push!(resultados, (arquivo, n, m_size, z_opt, tempo_execucao, "Ótimo"))
-            println("Concluído! Status: Ótimo | Afinidade: $z_opt")
+            println("Concluído! Status: Ótimo | Afinidade: ", z_opt)
             
         elseif status == MOI.TIME_LIMIT
-            # Se estourar o tempo, tenta pegar a melhor resposta encontrada até o momento
+            # Se estourar o tempo, tenta pegar a melhor resposta inteira encontrada (se houver)
             z_opt = has_values(modelo) ? objective_value(modelo) : NaN
             push!(resultados, (arquivo, n, m_size, z_opt, tempo_execucao, "Limite de Tempo"))
             println("Concluído! Status: Limite de Tempo atingido.")
             
         else
             push!(resultados, (arquivo, n, m_size, NaN, tempo_execucao, string(status)))
-            println("Concluído! Status: $status")
+            println("Concluído! Status: ", status)
         end
     end
 
@@ -87,10 +93,13 @@ function resolver_todas_instancias(pasta)
     println("-"^75)
     
     for r in resultados
-        if isnan(r[3])
-            @printf("%-12s | %-4d | %-4d | %-12s | %-12.2f | %-15s\n", r[1], r[2], r[4], "-", r[5], r[6])
+        # Desempacotando as variáveis para evitar o bug de formatação com colchetes
+        arq, n_val, m_val, z_opt, t_val, status_str = r
+        
+        if isnan(z_opt)
+            @printf("%-12s | %-4d | %-4d | %-12s | %-12.2f | %-15s\n", arq, n_val, m_val, "N/A", t_val, status_str)
         else
-            @printf("%-12s | %-4d | %-4d | %-12.2f | %-12.2f | %-15s\n", r[1], r[2], r[4], r[3], r[5], r[6])
+            @printf("%-12s | %-4d | %-4d | %-12.2f | %-12.2f | %-15s\n", arq, n_val, m_val, z_opt, t_val, status_str)
         end
     end
     println("="^75)
@@ -98,5 +107,5 @@ function resolver_todas_instancias(pasta)
 end
 
 # Se passar a pasta por argumento, usa ela; senão, usa a pasta atual (".")
-pasta_alvo = length(ARGS) > 0 ? ARGS[1] : "."
+pasta_alvo = length(ARGS) > 0 ? first(ARGS) : "."
 resolver_todas_instancias(pasta_alvo)
