@@ -77,7 +77,7 @@ julia solver.jl
 ### Executando a Meta-heurística VNS
 
 ```bash
-julia oma_vns.jl
+ Get-Content {arquivo-instância} | julia oma_vns.jl {nome-do-arquivo-de-saída} {tempo-limite} {estagnaçao} {perturbação}
 ```
 
 ## 👥 Integrantes
