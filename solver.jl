@@ -20,7 +20,7 @@ function resolver_todas_instancias(pasta)
         caminho_completo = joinpath(pasta, arquivo)
         println("\n>>> Processando: ", arquivo, " ...")
         
-        # Leitura da Instância (Corrigida para Lista de Arestas)
+        # Leitura da Instância 
         texto = read(caminho_completo, String)
         tokens = split(texto)
         valores = parse.(Float64, tokens)
@@ -31,7 +31,7 @@ function resolver_todas_instancias(pasta)
         A = zeros(Float64, n, n)
         idx = 3
         while idx + 2 <= length(valores)
-            # O arquivo original usa base-0 para os vértices, Julia usa base-1
+            
             u = round(Int, valores[idx]) + 1
             v = round(Int, valores[idx+1]) + 1
             peso = valores[idx+2]
@@ -46,10 +46,10 @@ function resolver_todas_instancias(pasta)
         # Criação do Modelo
         modelo = Model(GLPK.Optimizer)
         
-        # Desliga as mensagens gigantes do solver na tela para ficar limpo
+        # Desliga as mensagens 
         set_silent(modelo)
         
-        # Limite de tempo de 25 minutos (1500 segundos) para não travar o PC
+        # Limite de tempo de 25 minutos (1500 segundos) 
         set_time_limit_sec(modelo, 1500.0)
 
         @variable(modelo, x[1:n], Bin)

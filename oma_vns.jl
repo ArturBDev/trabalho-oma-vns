@@ -149,7 +149,7 @@ function run_vns(n, m, A, time_limit, limite_estagnacao, fator_kmax)
     return init_aff, best_aff, best_S, el_time
 end
 
-### --- FUNÇÃO PRINCIPAL EXIGIDA PELO TRABALHO ---
+### --- FUNÇÃO PRINCIPAL  ---
 function main() 
     # Verifica regras de linha de comando adaptadas
     if length(ARGS) < 2 
@@ -160,9 +160,9 @@ function main()
     arquivo_saida = ARGS[1]
     time_limit = parse(Float64, ARGS[2])
     
-    # Novos parâmetros de calibração para testes (Se o usuário não passar, usa os ótimos do relatório)
-    limite_estagnacao = length(ARGS) >= 3 ? parse(Int, ARGS[3]) : 500
-    fator_kmax = length(ARGS) >= 4 ? parse(Int, ARGS[4]) : 4
+    # Parâmetros(Se o usuário não passar, usa os ótimos do relatório)
+    limite_estagnacao = length(ARGS) >= 3 ? parse(Int, ARGS[3]) : 1000
+    fator_kmax = length(ARGS) >= 4 ? parse(Int, ARGS[4]) : 2
     
     # Leitura da Instância puramente por STDIN
     linhas = readlines(stdin)
@@ -195,7 +195,6 @@ function main()
     for seed in 1:NUM_SEEDS
         Random.seed!(seed * 1000)
         
-        # Chama a função run_vns que estava na sua estrutura inicial
         init_aff, best_aff, best_S, el_time = run_vns(n, m, A, time_limit, limite_estagnacao, fator_kmax)
         
         sum_si += init_aff
@@ -219,7 +218,7 @@ function main()
         println(io, "Melhor Grupo Encontrado: ", sort(melhor_S_global .- 1)) 
     end
     
-    # Impressão na saída padrão exigida pelo critério de avaliação
+    # Impressão na saída padrão
     println(round(avg_sf, digits=2))
 end
 
