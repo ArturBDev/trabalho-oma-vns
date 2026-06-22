@@ -1,0 +1,6 @@
+Instância de Tamanho N: 125 M: 12
+Valor Inicial (Média): 446.0
+Valor Final (Média): 462.8
+Tempo CPU (Média s): 0.0568
+--------------------------------------------------
+Melhor Grupo Encontrado: [2, 24, 30, 39, 41, 49, 52, 59, 66, 73, 80, 95]

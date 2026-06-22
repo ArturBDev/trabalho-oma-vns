@@ -1,0 +1,6 @@
+Instância de Tamanho N: 150 M: 15
+Valor Inicial (Média): 665.0
+Valor Final (Média): 716.6
+Tempo CPU (Média s): 0.0446
+--------------------------------------------------
+Melhor Grupo Encontrado: [13, 18, 45, 48, 49, 65, 74, 80, 94, 96, 98, 113, 115, 117, 142]
